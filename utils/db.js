@@ -1,25 +1,22 @@
 import { MongoClient } from 'mongodb';
 
+const HOST = process.env.DB_HOST || 'localhost';
+const PORT = process.env.DB_PORT || 27017;
+const DATABASE = process.env.DB_DATABASE || 'files_manager';
+const url = `mongodb://${HOST}:${PORT}`;
+
 class DBClient {
   constructor() {
-    const HOST = process.env.DB_HOST || 'localhost';
-    const PORT = process.env.DB_PORT || 27017;
-    const DATABASE = process.env.DB_DATABASE || 'files_manager';
-    const url = `mongodb://${HOST}:${PORT}`;
-    this.client = new MongoClient(url, { useUnifiedTopology: true, useNewUrlParser: true });
-    this.isConnected = false;
-    this.client.connect()
-      .then(() => {
-        this.isConnected = true;
-        this.db = this.client.db(DATABASE);
-      })
-      .catch(() => {
-        this.isConnected = false;
-      });
+    MongoClient.connect(url, { useUnifiedTopology: true }, (error, client) => {
+      if (error) console.log(error);
+      this.db = client.db(DATABASE);
+      this.db.createCollection('users');
+      this.db.createCollection('files');
+    });
   }
 
   async isAlive() {
-    return this.isConnected;
+    return !!this.db;
   }
 
   async nbUsers() {
