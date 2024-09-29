@@ -3,12 +3,14 @@ import { MongoClient } from 'mongodb';
 class DBClient {
   constructor() {
     const HOST = process.env.DB_HOST || 'localhost';
-    const PORT = process.env.BD_PORT || 27017;
+    const PORT = process.env.DB_PORT || 27017;
     const DATABASE = process.env.DB_DATABASE || 'files_manager';
-    const URI = `mongodb://${HOST}:${PORT}`;
-    this.client = new MongoClient(URI, { useUnifiedTopology: true });
-    this.client.connect((error) => {
-      if (!error) this.db = this.client.db(DATABASE);
+    const url = `mongodb://${HOST}:${PORT}`;
+    this.client = new MongoClient(url, { useUnifiedTopology: true });
+    this.client.connect().then(() => {
+      this.db = this.client.db(DATABASE);
+    }).catch((err) => {
+      console.log(err);
     });
   }
 
