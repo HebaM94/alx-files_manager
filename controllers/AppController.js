@@ -3,7 +3,9 @@ import redisClient from '../utils/redis';
 
 class AppController {
   static getStatus(_request, response) {
-    response.status(200).json({ redis: redisClient.isAlive(), db: dbClient.isAlive() });
+    if (dbClient.isAlive() && redisClient.isAlive()) {
+      response.status(200).json({ redis: true, db: true });
+    }
   }
 
   static async getStats(_request, response) {
