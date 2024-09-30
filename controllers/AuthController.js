@@ -9,14 +9,14 @@ class AuthController {
     let authData = authHeader.split(' ')[1];
     const decData = Buffer.from(authData, 'base64');
     authData = decData.toString('ascii');
-    const data = authData.split(':');
-    if (data.length !== 2) {
+    const [uemail, password] = authData.split(':');
+    if (!uemail || !password) {
       response.status(401).json({ error: 'Unauthorized' });
       return;
     }
-    const hashedPassword = sha1(data[1]);
-    const users = dbClient.db.collection('users');
-    users.findOne({ email: data[0], password: hashedPassword }, async (err, user) => {
+    const hashedPassword = sha1(password);
+    const users = await dbClient.db.collection('users');
+    users.findOne({ email: uemail, password: hashedPassword }, async (err, user) => {
       if (!user) {
         response.status(401).json({ error: 'Unauthorized' });
       }
@@ -33,7 +33,7 @@ class AuthController {
     const id = await redisClient.get(key);
     if (id) {
       await redisClient.del(key);
-      response.status(204).json({});
+      response.status(204).send();
     } else {
       response.status(401).json({ error: 'Unauthorized' });
     }

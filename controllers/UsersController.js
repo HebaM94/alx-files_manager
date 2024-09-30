@@ -34,13 +34,11 @@ class UsersController {
     }
     const users = dbClient.db.collection('users');
     const idObj = new ObjectID(userId);
-    users.findOne({ _id: idObj }, (err, user) => {
-      if (user) {
-        response.status(200).json({ id: userId, email: user.email });
-      } else {
-        response.status(401).json({ error: 'Unauthorized' });
-      }
-    });
+    const user = await users.findOne({ _id: idObj });
+    if (!user) {
+      return response.status(401).json({ error: 'Unauthorized' });
+    }
+    return response.status(200).json({ id: userId, email: user.email });
   }
 }
 
