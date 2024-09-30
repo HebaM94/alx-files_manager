@@ -34,7 +34,7 @@ class UsersController {
     }
     const users = dbClient.db.collection('users');
     const idObj = new ObjectID(userId);
-    users.findOne({ _id: idObj }, { projection: { email: 1 } }, (err, user) => {
+    users.findOne({ _id: idObj }, (err, user) => {
       if (user) {
         response.status(200).json({ id: userId, email: user.email });
       } else {
