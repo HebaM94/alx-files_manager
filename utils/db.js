@@ -14,7 +14,7 @@ class DBClient {
   }
 
   async isAlive() {
-    return this.client.topology && this.client.topology.isConnected();
+    return this.client.isConnected();
   }
 
   async nbUsers() {
