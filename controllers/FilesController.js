@@ -128,18 +128,16 @@ class FilesController {
     const fileId = request.params.id;
     const files = dbClient.db.collection('files');
     const fileObj = new ObjectID(fileId);
-    const file = await files.findOne({ _id: fileObj, userId: user._id });
-    if (!file) {
+    try {
+      const file = await files.findOne({ _id: fileObj, userId: user._id });
+      if (!file) {
+        return response.status(404).json({ error: 'Not found' });
+      }
+      return response.status(200).json(file);
+    } catch (error) {
+      console.log(error);
       return response.status(404).json({ error: 'Not found' });
     }
-    return response.status(200).json({
-      id: file._id,
-      userId: user._id,
-      name: file.name,
-      type: file.type,
-      isPublic: file.isPublic,
-      parentId: file.parentId,
-    });
   }
 
   static async getIndex(request, response) {
@@ -156,18 +154,25 @@ class FilesController {
       return response.status(401).json({ error: 'Unauthorized' });
     }
     const parentId = request.query.parentId || 0;
+    const { page } = request.query;
+    const pageNum = page || 0;
     const files = dbClient.db.collection('files');
-    const query = { userId: user._id, parentId };
-    const cursor = await files.find(query);
-    const filesArray = await cursor.toArray();
-    return response.status(200).json(filesArray.map((file) => ({
-      id: file._id,
-      userId: user._id,
-      name: file.name,
-      type: file.type,
-      isPublic: file.isPublic,
-      parentId: file.parentId,
-    })));
+    let query;
+    if (!parentId) {
+      query = { userId: user._id };
+    } else {
+      query = { userId: user._id, parentId: ObjectID(parentId) };
+    }
+    try {
+      const filesArray = await files.aggregate([
+        { $match: query },
+        { $skip: page * pageNum },
+        { $limit: pageNum },
+      ]).toArray();
+      return response.status(200).json(filesArray);
+    } catch (error) {
+      return response.status(404).json({ error: 'Not found' });
+    }
   }
 }
 
