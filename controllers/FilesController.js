@@ -24,7 +24,7 @@ class FilesController {
 
     const { name } = request.body;
     const { type } = request.body;
-    const { parentId } = request.body.parentId || 0;
+    const parentId = request.body.parentId || 0;
     const isPublic = request.body.isPublic || false;
     const { data } = request.body;
     if (!name) {
@@ -74,8 +74,8 @@ class FilesController {
       const fileName = `${filePath}/${uuidv4()}`;
       const buff = Buffer.from(data, 'base64');
       try {
-        await fs.mkdir(filePath);
-        await fs.writeFile(fileName, buff, 'utf-8');
+        await fs.mkdir(filePath, { recursive: true });
+        await fs.writeFile(fileName, buff);
       } catch (error) {
         console.log(error);
       }
