@@ -113,18 +113,11 @@ class FilesController {
   }
 
   static async getShow(request, response) {
-    const { id } = request.params;
-    const fileId = new ObjectID(id);
-    const files = dbClient.db.collection('files');
-    const file = await files.findOne({ _id: fileId });
-    if (!file) {
-      return response.status(404).json({ error: 'Not found' });
-    }
     const token = request.header('X-Token');
     const key = `auth_${token}`;
     const userId = await redisClient.get(key);
     if (!userId) {
-      return response.status(401).json({ error: 'Unauthorized' });
+      response.status(401).json({ error: 'Unauthorized' });
     }
     const users = dbClient.db.collection('users');
     const idObj = new ObjectID(userId);
@@ -132,12 +125,16 @@ class FilesController {
     if (!user) {
       return response.status(401).json({ error: 'Unauthorized' });
     }
-    if (file.userId.toString() !== userId) {
-      return response.status(401).json({ error: 'Unauthorized' });
+    const fileId = request.params.id;
+    const files = dbClient.db.collection('files');
+    const fileObj = new ObjectID(fileId);
+    const file = await files.findOne({ _id: fileObj, userId: user._id });
+    if (!file) {
+      return response.status(404).json({ error: 'Not found' });
     }
     return response.status(200).json({
       id: file._id,
-      userId: file.userId,
+      userId: user._id,
       name: file.name,
       type: file.type,
       isPublic: file.isPublic,
@@ -150,7 +147,7 @@ class FilesController {
     const key = `auth_${token}`;
     const userId = await redisClient.get(key);
     if (!userId) {
-      return response.status(401).json({ error: 'Unauthorized' });
+      response.status(401).json({ error: 'Unauthorized' });
     }
     const users = dbClient.db.collection('users');
     const idObj = new ObjectID(userId);
@@ -160,9 +157,17 @@ class FilesController {
     }
     const parentId = request.query.parentId || 0;
     const files = dbClient.db.collection('files');
-    const query = { userId: idObj, parentId };
-    const data = await files.find(query).toArray();
-    return response.status(200).json(data);
+    const query = { userId: user._id, parentId };
+    const cursor = await files.find(query);
+    const filesArray = await cursor.toArray();
+    return response.status(200).json(filesArray.map((file) => ({
+      id: file._id,
+      userId: user._id,
+      name: file.name,
+      type: file.type,
+      isPublic: file.isPublic,
+      parentId: file.parentId,
+    })));
   }
 }
 
