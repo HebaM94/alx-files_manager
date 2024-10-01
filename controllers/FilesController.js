@@ -160,16 +160,23 @@ class FilesController {
     if (!user) {
       return response.status(401).json({ error: 'Unauthorized' });
     }
-    const parentId = request.query.parentId || 0;
+    let { parentId } = request.query;
+    parentId = parentId || '0';
     const page = parseInt(request.query.page, 10) || 0;
     const pageSize = 20;
+
     const files = dbClient.db.collection('files');
     let query;
+
     if (parentId === 0) {
-      query = { userId: idObj, parentId: 0 };
+      query = { userId: idObj, parentId: '0' };
     } else {
-      const parentObj = new ObjectID(parentId);
-      query = { userId: idObj, parentId: parentObj };
+      try {
+        const parentObj = new ObjectID(parentId);
+        query = { userId: user._id, parentId: parentObj };
+      } catch (error) {
+        return response.status(400).json({ error: 'Invalid parentId' });
+      }
     }
 
     try {
@@ -188,8 +195,7 @@ class FilesController {
         parentId: file.parentId,
       })));
     } catch (error) {
-      console.log('Error occured');
-      return response.status(404).json({ error: 'Not found' });
+      return response.status(500).json({ error: 'Internal server error' });
     }
   }
 }
