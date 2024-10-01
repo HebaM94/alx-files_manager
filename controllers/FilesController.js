@@ -126,9 +126,10 @@ class FilesController {
       return response.status(401).json({ error: 'Unauthorized' });
     }
     const fileId = request.params.id;
-    const files = dbClient.db.collection('files');
-    const fileObj = new ObjectID(fileId);
+
     try {
+      const files = dbClient.db.collection('files');
+      const fileObj = new ObjectID(fileId);
       const file = await files.findOne({ _id: fileObj });
       if (!file || (file.userId.toString() !== userId && !file.isPublic)) {
         return response.status(404).json({ error: 'Not found' });
@@ -163,7 +164,13 @@ class FilesController {
     const page = parseInt(request.query.page, 10) || 0;
     const pageSize = 20;
     const files = dbClient.db.collection('files');
-    const query = { userId: user._id, parentId };
+    let query;
+    if (parentId === 0) {
+      query = { userId: idObj, parentId: 0 };
+    } else {
+      const parentObj = new ObjectID(parentId);
+      query = { userId: idObj, parentId: parentObj };
+    }
 
     try {
       const filesArray = await files.aggregate([
@@ -181,7 +188,8 @@ class FilesController {
         parentId: file.parentId,
       })));
     } catch (error) {
-      return response.status(500).json({ error: 'Internal server error' });
+      console.log('Error occured');
+      return response.status(404).json({ error: 'Not found' });
     }
   }
 }
