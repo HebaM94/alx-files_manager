@@ -22,8 +22,7 @@ class FilesController {
       return response.status(401).json({ error: 'Unauthorized' });
     }
 
-    const { name } = request.body;
-    const { type } = request.body;
+    const { name, type } = request.body;
     const parentId = request.body.parentId || 0;
     const isPublic = request.body.isPublic || false;
     const { data } = request.body;
@@ -99,6 +98,7 @@ class FilesController {
             parentId: parentId || 0,
           },
         );
+
         if (type === 'image') {
           fileQueue.add(
             {
