@@ -133,7 +133,14 @@ class FilesController {
       if (!file) {
         return response.status(404).json({ error: 'Not found' });
       }
-      return response.status(200).json(file);
+      return response.status(200).json({
+        id: file._id,
+        userId: file.userId,
+        name: file.name,
+        type: file.type,
+        isPublic: file.isPublic,
+        parentId: file.parentId,
+      });
     } catch (error) {
       console.log(error);
       return response.status(404).json({ error: 'Not found' });
