@@ -13,7 +13,7 @@ class FilesController {
     const key = `auth_${token}`;
     const userId = await redisClient.get(key);
     if (!userId) {
-      response.status(401).json({ error: 'Unauthorized' });
+      return response.status(401).json({ error: 'Unauthorized' });
     }
     const users = dbClient.db.collection('users');
     const idObj = new ObjectID(userId);
@@ -117,7 +117,7 @@ class FilesController {
     const key = `auth_${token}`;
     const userId = await redisClient.get(key);
     if (!userId) {
-      response.status(401).json({ error: 'Unauthorized' });
+      return response.status(401).json({ error: 'Unauthorized' });
     }
     const users = dbClient.db.collection('users');
     const idObj = new ObjectID(userId);
@@ -129,8 +129,8 @@ class FilesController {
     const files = dbClient.db.collection('files');
     const fileObj = new ObjectID(fileId);
     try {
-      const file = await files.findOne({ _id: fileObj, userId: user._id });
-      if (!file) {
+      const file = await files.findOne({ _id: fileObj });
+      if (!file || (file.userId.toString() !== userId && !file.isPublic)) {
         return response.status(404).json({ error: 'Not found' });
       }
       return response.status(200).json({
@@ -142,7 +142,6 @@ class FilesController {
         parentId: file.parentId,
       });
     } catch (error) {
-      console.log(error);
       return response.status(404).json({ error: 'Not found' });
     }
   }
@@ -152,7 +151,7 @@ class FilesController {
     const key = `auth_${token}`;
     const userId = await redisClient.get(key);
     if (!userId) {
-      response.status(401).json({ error: 'Unauthorized' });
+      return response.status(401).json({ error: 'Unauthorized' });
     }
     const users = dbClient.db.collection('users');
     const idObj = new ObjectID(userId);
@@ -161,24 +160,28 @@ class FilesController {
       return response.status(401).json({ error: 'Unauthorized' });
     }
     const parentId = request.query.parentId || 0;
-    const { page } = request.query;
-    const pageNum = page || 0;
+    const page = parseInt(request.query.page, 10) || 0;
+    const pageSize = 20;
     const files = dbClient.db.collection('files');
-    let query;
-    if (!parentId) {
-      query = { userId: user._id };
-    } else {
-      query = { userId: user._id, parentId: ObjectID(parentId) };
-    }
+    const query = { userId: user._id, parentId };
+
     try {
       const filesArray = await files.aggregate([
         { $match: query },
-        { $skip: page * pageNum },
-        { $limit: pageNum },
+        { $skip: page * pageSize },
+        { $limit: pageSize },
       ]).toArray();
-      return response.status(200).json(filesArray);
+
+      return response.status(200).json(filesArray.map((file) => ({
+        id: file._id,
+        userId: file.userId,
+        name: file.name,
+        type: file.type,
+        isPublic: file.isPublic,
+        parentId: file.parentId,
+      })));
     } catch (error) {
-      return response.status(404).json({ error: 'Not found' });
+      return response.status(500).json({ error: 'Internal server error' });
     }
   }
 }
