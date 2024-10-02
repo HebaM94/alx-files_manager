@@ -161,42 +161,40 @@ class FilesController {
       return response.status(401).json({ error: 'Unauthorized' });
     }
     let { parentId } = request.query;
-    parentId = parentId || '0';
+    parentId = parentId || null;
     const page = parseInt(request.query.page, 10) || 0;
     const pageSize = 20;
 
     const files = dbClient.db.collection('files');
     let query;
 
-    if (parentId === 0) {
-      query = { userId: idObj, parentId: '0' };
+    if (!parentId) {
+      query = { userId: user._id };
     } else {
-      try {
-        const parentObj = new ObjectID(parentId);
-        query = { userId: user._id, parentId: parentObj };
-      } catch (error) {
-        return response.status(400).json({ error: 'Invalid parentId' });
+      query = { userId: user._id, parentId: ObjectID(parentId) };
+    }
+    files.aggregate([
+      { $match: query },
+      { $skip: page * pageSize },
+      { $limit: pageSize },
+    ]).toArray((err, result) => {
+      if (result) {
+        const filesArray = result[0].data.map((file) => {
+          const tmpFile = {
+            ...file,
+            id: file._id,
+          };
+          delete tmpFile._id;
+          delete tmpFile.localPath;
+          return tmpFile;
+        });
+
+        return response.status(200).json(filesArray);
       }
-    }
-
-    try {
-      const filesArray = await files.aggregate([
-        { $match: query },
-        { $skip: page * pageSize },
-        { $limit: pageSize },
-      ]).toArray();
-
-      return response.status(200).json(filesArray.map((file) => ({
-        id: file._id,
-        userId: file.userId,
-        name: file.name,
-        type: file.type,
-        isPublic: file.isPublic,
-        parentId: file.parentId,
-      })));
-    } catch (error) {
-      return response.status(500).json({ error: 'Internal server error' });
-    }
+      console.log('Error occured');
+      return response.status(404).json({ error: 'Not found' });
+    });
+    return null;
   }
 }
 
