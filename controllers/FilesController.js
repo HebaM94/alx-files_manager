@@ -177,6 +177,7 @@ class FilesController {
     try {
       const filesArray = await files.aggregate([
         { $match: query },
+        { $sort: { _id: 1 } },
         { $skip: page * pageSize },
         { $limit: pageSize },
       ]).toArray();
