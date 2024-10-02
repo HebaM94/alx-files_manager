@@ -173,28 +173,25 @@ class FilesController {
     } else {
       query = { userId: user._id, parentId: ObjectID(parentId) };
     }
-    files.aggregate([
-      { $match: query },
-      { $skip: page * pageSize },
-      { $limit: pageSize },
-    ]).toArray((err, result) => {
-      if (result) {
-        const filesArray = result[0].data.map((file) => {
-          const tmpFile = {
-            ...file,
-            id: file._id,
-          };
-          delete tmpFile._id;
-          delete tmpFile.localPath;
-          return tmpFile;
-        });
 
-        return response.status(200).json(filesArray);
-      }
-      console.log('Error occured');
-      return response.status(404).json({ error: 'Not found' });
-    });
-    return null;
+    try {
+      const filesArray = await files.aggregate([
+        { $match: query },
+        { $skip: page * pageSize },
+        { $limit: pageSize },
+      ]).toArray();
+
+      return response.status(200).json(filesArray.map((file) => ({
+        id: file._id,
+        userId: file.userId,
+        name: file.name,
+        type: file.type,
+        isPublic: file.isPublic,
+        parentId: file.parentId,
+      })));
+    } catch (error) {
+      return response.status(500).json({ error: 'Internal server error' });
+    }
   }
 }
 
