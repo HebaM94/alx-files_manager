@@ -277,7 +277,19 @@ class FilesController {
         }
 
         if (size) {
+          const validSizes = ['500', '250', '100'];
+          if (!validSizes.includes(size)) {
+            return response.status(400).json({ error: 'Invalid size parameter' });
+          }
           fileName = `${file.localPath}_${size}`;
+          try {
+            await fs.access(fileName);
+            const data = await fs.readFile(fileName);
+            const contentType = mime.contentType(file.name);
+            return response.header('Content-Type', contentType).status(200).send(data);
+          } catch (err) {
+            return response.status(404).json({ error: 'Not found' });
+          }
         }
 
         const data = await fs.readFile(fileName);
@@ -307,7 +319,19 @@ class FilesController {
         }
 
         if (size) {
+          const validSizes = ['500', '250', '100'];
+          if (!validSizes.includes(size)) {
+            return response.status(400).json({ error: 'Invalid size parameter' });
+          }
           fileName = `${file.localPath}_${size}`;
+          try {
+            await fs.access(fileName);
+            const data = await fs.readFile(fileName);
+            const contentType = mime.contentType(file.name);
+            return response.header('Content-Type', contentType).status(200).send(data);
+          } catch (err) {
+            return response.status(404).json({ error: 'Not found' });
+          }
         }
         const contentType = mime.contentType(file.name);
         return response.header('Content-Type', contentType).status(200).sendFile(fileName);
